@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="net.miso.parser.cpc.mapper.CpcMapper">
+
+    <insert id="insertCpcTrees" parameterType="list">
+        INSERT INTO CPC_TREE
+        (
+        PARENT_SYMBOL
+        , SYMBOL
+        , LVL
+        , SORT_KEY
+        , BREAKDOWN_CODE
+        , NOT_ALLOCATABLE
+        , ADDITIONAL_ONLY
+        , DEFINITION_EXISTS
+        , DATE_REVISED
+        , STATUS
+        )
+        <foreach collection="list" item="cpcTree" separator="UNION ALL">
+            SELECT
+            #{cpcTree.parentSymbol}
+            , #{cpcTree.symbol}
+            , #{cpcTree.level}
+            , #{cpcTree.sortKey}
+            , #{cpcTree.breakdownCode}
+            , #{cpcTree.notAllocatable}
+            , #{cpcTree.additionalOnly}
+            , #{cpcTree.definitionExists}
+            , #{cpcTree.dateRevised}
+            , #{cpcTree.status}
+            FROM DUAL
+        </foreach>
+    </insert>
+
+    <insert id="insertCpcTitles" parameterType="list">
+        INSERT INTO CPC_TITLE
+        (
+        SYMBOL
+        , LVL
+        , TITLE
+        , DATE_REVISED
+        )
+        <foreach collection="list" item="cpcTitle" separator="UNION ALL">
+            SELECT
+            #{cpcTitle.symbol}
+            , #{cpcTitle.level}
+            , #{cpcTitle.title}
+            , #{cpcTitle.dateRevised}
+            FROM DUAL
+        </foreach>
+    </insert>
+
+    <insert id="insertCpcMedias" parameterType="list">
+        INSERT INTO CPC_MEDIA
+        (
+        SYMBOL
+        , LVL
+        , ID
+        , FILE_NAME
+        , STORE_PATH
+        , "TYPE"
+        )
+        SELECT DISTINCT *
+        FROM (
+        <foreach collection="list" item="cpcMedia" separator="UNION ALL">
+            SELECT #{cpcMedia.symbol}
+            , #{cpcMedia.level}
+            , #{cpcMedia.id}
+            , #{cpcMedia.fileName}
+            , #{cpcMedia.storePath}
+            , #{cpcMedia.type}
+            FROM DUAL
+        </foreach>
+        )
+    </insert>
+
+    <insert id="insertCpcNoteAndWarnings" parameterType="list">
+        INSERT INTO CPC_NOTEANDWARNING
+        ( SYMBOL
+        , LVL
+        , "TYPE"
+        , SEQ
+        , "DEPTH"
+        , SUBNOTE_TYPE
+        , CONTENT
+        , DATE_REVISED
+        )
+        <foreach collection="list" item="cpcNw" separator="UNION ALL">
+            SELECT #{cpcNw.symbol}
+            , #{cpcNw.level}
+            , #{cpcNw.type}
+            , #{cpcNw.seq}
+            , #{cpcNw.depth}
+            , #{cpcNw.subnoteType}
+            , #{cpcNw.content}
+            , #{cpcNw.dateRevised}
+            FROM DUAL
+        </foreach>
+    </insert>
+
+</mapper>
