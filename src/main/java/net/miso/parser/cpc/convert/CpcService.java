@@ -91,8 +91,10 @@ public class CpcService {
 
         ///////////////////////// 반입 시작 ///////////////////
         long insertStart = System.currentTimeMillis();
-
         int cpcTreeResultCount = 0;
+        int cpcTitleResultCount = 0;
+        int cpcNwResultCount = 0;
+
         if(!cpcTreeLists.isEmpty()) {
             for(List<CpcTree> treeList : cpcTreeLists) {
                 if(!treeList.isEmpty()) {
@@ -100,28 +102,36 @@ public class CpcService {
                 }
             }
             LOGGER.info("######### 1. CPC TREE INSERT RESULT COUNT : {}", cpcTreeResultCount);
+            cpcTreeLists.clear();
+            cpcTreeList.clear();
         }
-        int cpcTitleResultCount = 0;
+
+        if(!cpcMediaList.isEmpty()) {
+            int cpcMediaResultCount = cpcMapper.insertCpcMedias(cpcMediaList);
+            LOGGER.info("######### 2. CPC MEDIA INSERT RESULT COUNT : {}", cpcMediaResultCount);
+            cpcMediaList.clear();
+        }
+        if(!cpcNwLists.isEmpty()) {
+            for(List<CpcNoteAndWarning> nwList : cpcNwLists) {
+                if(!nwList.isEmpty()) {
+                    cpcNwResultCount += cpcMapper.insertCpcNoteAndWarnings(nwList);
+                }
+            }
+            LOGGER.info("######### 3. CPC NOTE AND WARNING INSERT RESULT COUNT : {}", cpcNwResultCount);
+            cpcNwLists.clear();
+            cpcNwList.clear();
+        }
         if(!cpcTitleLists.isEmpty()) {
             for (List<CpcTitle> titleList : cpcTitleLists) {
                 if(!titleList.isEmpty()){
                     cpcTitleResultCount += cpcMapper.insertCpcTitles(titleList);
                 }
             }
-            LOGGER.info("######### 2. CPC TITLE INSERT RESULT COUNT : {}", cpcTitleResultCount);
+            LOGGER.info("######### 4. CPC TITLE INSERT RESULT COUNT : {}", cpcTitleResultCount);
+            cpcTitleLists.clear();
+            cpcTitleList.clear();
         }
-        if(!cpcMediaList.isEmpty()) {
-            int cpcMediaResultCount = cpcMapper.insertCpcMedias(cpcMediaList);
-            LOGGER.info("######### 3. CPC MEDIA INSERT RESULT COUNT : {}", cpcMediaResultCount);
-        }
-        if(!cpcNwLists.isEmpty()) {
-            for(List<CpcNoteAndWarning> nwList : cpcNwLists) {
-                if(!nwList.isEmpty()) {
-                    int cpcNwResultCount = cpcMapper.insertCpcNoteAndWarnings(nwList);
-                    LOGGER.info("######### 4. CPC NOTE AND WARNING INSERT RESULT COUNT : {}", cpcNwResultCount);
-                }
-            }
-        }
+
         long insertEnd = System.currentTimeMillis();
         LOGGER.info("############### CPC 반입 종료 - 소요시간(초) : {}", (insertEnd - insertStart)/1000);
     }
@@ -157,21 +167,19 @@ public class CpcService {
 
                 // Get a CPC_TREE Object ***
                 CpcTree cpcTree = getCpcTree(parentSymbol, item, symbol);
-                if(cpcTreeList.size() == 10000) {
+                cpcTreeList.add(cpcTree);
+                if(cpcTreeList.size() == 5000) {
                     cpcTreeLists.add(cpcTreeList);
                     cpcTreeList = new ArrayList<>();
-                } else if (cpcTreeList.size() <= 10000) {
-                    cpcTreeList.add(cpcTree);
                 }
 //                LOGGER.info("cpcTree [level: {}, symbol: {}, parent_symbol : {}]", cpcTree.getLevel(), cpcTree.getSymbol(), cpcTree.getParentSymbol());
 
                 // Get a CPC_TREE Object ***
                 CpcTitle cpcTitle = getCpcTitle(symbol, item);
-                if(cpcTitleList.size() == 10000) {
+                cpcTitleList.add(cpcTitle);
+                if(cpcTitleList.size() == 5000) {
                     cpcTitleLists.add(cpcTitleList);
                     cpcTitleList = new ArrayList<>();
-                } else if (cpcTitleList.size() <= 10000) {
-                    cpcTitleList.add(cpcTitle);
                 }
                 getCpcNoteAndWarning(item);
 
