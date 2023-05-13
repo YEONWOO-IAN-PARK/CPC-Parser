@@ -12,6 +12,7 @@ public class CpcTree {
 
     private String parentSymbol;
     private String symbol;
+    private int parentLevel;
     private int level;
     private String sortKey;
     private String breakdownCode;

@@ -2,11 +2,11 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 
 <mapper namespace="net.miso.parser.cpc.mapper.CpcMapper">
-
     <insert id="insertCpcTrees" parameterType="list">
         INSERT INTO CPC_TREE
         (
         PARENT_SYMBOL
+        , PARENT_LVL
         , SYMBOL
         , LVL
         , SORT_KEY
@@ -20,6 +20,14 @@
         <foreach collection="list" item="cpcTree" separator="UNION ALL">
             SELECT
             #{cpcTree.parentSymbol}
+            <choose>
+                <when test="cpcTree.parentSymbol != null">
+                    , #{cpcTree.parentLevel}
+                </when>
+                <otherwise>
+                    , NULL
+                </otherwise>
+            </choose>
             , #{cpcTree.symbol}
             , #{cpcTree.level}
             , #{cpcTree.sortKey}
@@ -98,5 +106,4 @@
             FROM DUAL
         </foreach>
     </insert>
-
 </mapper>

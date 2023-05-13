@@ -95,22 +95,17 @@ public class CpcService {
         int cpcTitleResultCount = 0;
         int cpcNwResultCount = 0;
 
-        if(!cpcTreeLists.isEmpty()) {
-            for(List<CpcTree> treeList : cpcTreeLists) {
-                if(!treeList.isEmpty()) {
-                    cpcTreeResultCount += cpcMapper.insertCpcTrees(treeList);
-                }
-            }
-            LOGGER.info("######### 1. CPC TREE INSERT RESULT COUNT : {}", cpcTreeResultCount);
-            cpcTreeLists.clear();
-            cpcTreeList.clear();
-        }
 
-        if(!cpcMediaList.isEmpty()) {
-            int cpcMediaResultCount = cpcMapper.insertCpcMedias(cpcMediaList);
-            LOGGER.info("######### 2. CPC MEDIA INSERT RESULT COUNT : {}", cpcMediaResultCount);
-            cpcMediaList.clear();
-        }
+//        if(!cpcTreeLists.isEmpty()) {
+//            for(List<CpcTree> treeList : cpcTreeLists) {
+//                if(!treeList.isEmpty()) {
+//                    cpcTreeResultCount += cpcMapper.insertCpcTrees(treeList);
+//                }
+//            }
+//            LOGGER.info("######### 1. CPC TREE INSERT RESULT COUNT : {}", cpcTreeResultCount);
+//            cpcTreeLists.clear();
+//            cpcTreeList.clear();
+//        }
         if(!cpcNwLists.isEmpty()) {
             for(List<CpcNoteAndWarning> nwList : cpcNwLists) {
                 if(!nwList.isEmpty()) {
@@ -121,16 +116,21 @@ public class CpcService {
             cpcNwLists.clear();
             cpcNwList.clear();
         }
-        if(!cpcTitleLists.isEmpty()) {
-            for (List<CpcTitle> titleList : cpcTitleLists) {
-                if(!titleList.isEmpty()){
-                    cpcTitleResultCount += cpcMapper.insertCpcTitles(titleList);
-                }
-            }
-            LOGGER.info("######### 4. CPC TITLE INSERT RESULT COUNT : {}", cpcTitleResultCount);
-            cpcTitleLists.clear();
-            cpcTitleList.clear();
+        if(!cpcMediaList.isEmpty()) {
+            int cpcMediaResultCount = cpcMapper.insertCpcMedias(cpcMediaList);
+            LOGGER.info("######### 2. CPC MEDIA INSERT RESULT COUNT : {}", cpcMediaResultCount);
+            cpcMediaList.clear();
         }
+//        if(!cpcTitleLists.isEmpty()) {
+//            for (List<CpcTitle> titleList : cpcTitleLists) {
+//                if(!titleList.isEmpty()){
+//                    cpcTitleResultCount += cpcMapper.insertCpcTitles(titleList);
+//                }
+//            }
+//            LOGGER.info("######### 4. CPC TITLE INSERT RESULT COUNT : {}", cpcTitleResultCount);
+//            cpcTitleLists.clear();
+//            cpcTitleList.clear();
+//        }
 
         long insertEnd = System.currentTimeMillis();
         LOGGER.info("############### CPC 반입 종료 - 소요시간(초) : {}", (insertEnd - insertStart)/1000);
@@ -190,6 +190,10 @@ public class CpcService {
         }
     }
 
+    /**
+     * 전달받은 Element에서 Note & Warning 정보를 찾아 하위 요소에서 모든 Note & Warning 정보를 탐색하는 기능
+     * @param item Element 요소
+     */
     private void getCpcNoteAndWarning(ClassificationItemType item) {
         NotesAndWarningsType nw = item.getNotesAndWarnings();
 
@@ -204,10 +208,10 @@ public class CpcService {
                     String noteType = note.getType().value();   // "note" or "warning", 반드시 존재함
                     int seq = 1;    // 하나의 <note type="note">태그 안에 존재하는 <note-paragraph>의 시퀀스
                     int depth = 0;
-
+                    String smb = convertSymbol(item.getClassificationSymbol());
                     // 하나의 CpcNoteAndWarning 객체생성을 위한 파라미터 세팅
                     Map<String, Object> cpcNwMap = new HashMap<>();
-                    cpcNwMap.put("symbol", convertSymbol(item.getClassificationSymbol()));
+                    cpcNwMap.put("symbol",smb);
                     cpcNwMap.put("level", item.getLevel());
                     cpcNwMap.put("type", noteType);
                     cpcNwMap.put("seq", seq);
@@ -227,7 +231,8 @@ public class CpcService {
         if (noteParagraphList != null && !noteParagraphList.isEmpty()) {
             int beforeIndex = 0;
             int depth = (int) cpcNwMap.get("depth");
-            if(noteParagraphList.size() > 1 && depth == 0) cpcNwMap.put("subnoteType", "number");  // <note-paragraph> 요소가 2개 이상일때 문장을 number로 구분하기 때문
+            String noteTp = (String) cpcNwMap.get("type");
+            if(noteParagraphList.size() > 1 && depth == 0 && noteTp.equals("note")) cpcNwMap.put("subnoteType", "number");  // <note-paragraph> 요소가 2개 이상일때 문장을 number로 구분하기 때문
 
             for (NoteParagraphType noteParagraph : noteParagraphList) {
                 beforeIndex++;
@@ -250,16 +255,18 @@ public class CpcService {
         String beforeTp = (String) cpcNwMap.get("beforeType");
         int contentsSize = (int) cpcNwMap.get("contentsSize");
         if(!"table".equals(beforeTp)) {
-            contentsSize = contentsSize == contents.size() ? contentsSize : contents.size();
+            contentsSize = (contentsSize == contents.size())? contentsSize : contents.size();
         }
         int i = 0;  // 넘겨받은 contents의 길이와 현재 반복문의 인덱스를 비교하기 위한 변수
         int textIndex = 0;  // 하나의 <note-paragraph>요소에서 하나의 text문자열을 만날때마다 증가하는 값
+
 
         if (contents != null && !contents.isEmpty()) {
             for (Serializable content : contents) {
 
                 String trimContent = content.toString().trim();
-                if(!"".equals(trimContent)) i++;
+//                if(!"".equals(trimContent)) i++;
+                i++;
 
                 if (content instanceof JAXBElement) {
                     String typeName = ((JAXBElement<?>) content).getName().toString();
@@ -270,10 +277,21 @@ public class CpcService {
                         sb.append(convertedDate);
 
                     } else if ("CPC-specific-note".equals(typeName)) {
+                        int beforeSize = (int) cpcNwMap.get("beforeSize");  // A61P -> 5
+                        int beforeIndex = (int) cpcNwMap.get("beforeIndex");    //  A61P -> 3
+                        int nowContentsSize = contents.size();  // 3
+
                         List<Serializable> cpcNoteContents = ((NoteParagraphType) cont.getValue()).getContent();
                         cpcNwMap.put("contentsSize", cpcNoteContents.size());
+                        cpcNwMap.put("beforeSize", nowContentsSize);
+                        cpcNwMap.put("beforeIndex", i);
+                        cpcNwMap.put("beforeType", "cpcSpecNote");
+
                         doRecursiveNw2(sb, cpcNoteContents, cpcNwMap);
 
+                        cpcNwMap.put("beforeSize", beforeSize);
+                        cpcNwMap.put("beforeIndex", beforeIndex);
+                        cpcNwMap.put("beforeType", "");
                     } else if (cont.getValue() instanceof ClassRefType) {
                         sb.append(((ClassRefType) cont.getValue()).getValue());
 
@@ -286,11 +304,10 @@ public class CpcService {
                         sb.append("</pre>");
 
                         CpcNoteAndWarning nw = setCpcNw(sb, cpcNwMap);
+                        cpcNwList.add(nw);
                         if(cpcNwList.size() == 5000) {
                             cpcNwLists.add(cpcNwList);
                             cpcNwList = new ArrayList<>();
-                        } else if (cpcNwList.size() <= 5000) {
-                            cpcNwList.add(nw);
                         }
 
                         sb.setLength(0);
@@ -298,23 +315,21 @@ public class CpcService {
                         cpcNwMap.put("seq", ++seq);
                     } else if (cont.getValue() instanceof TableType) {
                         String subnoteType = (String) cpcNwMap.get("subnoteType");
-                        cpcNwMap.put("subnoteType", "");
-
-                        // <table> Element를 만나면 CpcNoteAndWarning를 생성완료하고 리스트에 넣는다.(table이 가진 하위 entry 목록을 생성해야하기 때문)
-                        CpcNoteAndWarning nw = setCpcNw(sb, cpcNwMap);
-                        if(cpcNwList.size() == 5000) {
-                            cpcNwLists.add(cpcNwList);
-                            cpcNwList = new ArrayList<>();
-                        } else if (cpcNwList.size() <= 5000) {
-                            cpcNwList.add(nw);
-                        }
-
-                        sb.setLength(0);
+//                        cpcNwMap.put("subnoteType", "");
                         int seq = (int) cpcNwMap.get("seq");
+                        // <table> Element를 만나면 CpcNoteAndWarning를 생성완료하고 리스트에 넣는다.(table이 가진 하위 entry 목록을 생성해야하기 때문)
+                        if(!"".equals(sb.toString())) {
+                            CpcNoteAndWarning nw = setCpcNw(sb, cpcNwMap);
+                            cpcNwList.add(nw);
+                            if (cpcNwList.size() == 5000) {
+                                cpcNwLists.add(cpcNwList);
+                                cpcNwList = new ArrayList<>();
+                            }
+                            sb.setLength(0);
+                            cpcNwMap.put("seq", ++seq);
+                        }
                         cpcNwMap.put("beforeType",  "table");
                         cpcNwMap.put("subnoteType", "table");
-                        cpcNwMap.put("seq", ++seq);
-
 
                         List<RowType> rowList = ((TableType) cont.getValue()).getRow();
                         for (RowType row : rowList) {
@@ -334,17 +349,16 @@ public class CpcService {
 
                                 if(entryList.size() != entryIdx) sb.append("|");
                             }
-//                            cpcNwMap.put("seq", ++seq);
-                            CpcNoteAndWarning tableNw = setCpcNw(sb, cpcNwMap);
-                            if(cpcNwList.size() == 5000) {
-                                cpcNwLists.add(cpcNwList);
-                                cpcNwList = new ArrayList<>();
-                            } else if (cpcNwList.size() <= 5000) {
+                            if(!"".equals(sb.toString())) {
+                                CpcNoteAndWarning tableNw = setCpcNw(sb, cpcNwMap);
                                 cpcNwList.add(tableNw);
+                                if (cpcNwList.size() == 5000) {
+                                    cpcNwLists.add(cpcNwList);
+                                    cpcNwList = new ArrayList<>();
+                                }
+                                sb.setLength(0);
+                                cpcNwMap.put("seq", ++seq);
                             }
-
-                            sb.setLength(0);
-                            cpcNwMap.put("seq", ++seq);
                         }
                         cpcNwMap.put("beforeType",  "");
                         cpcNwMap.put("subnoteType", subnoteType);
@@ -382,22 +396,22 @@ public class CpcService {
 
                     } else if (cont.getValue() instanceof SubnoteType) {
                         String beforeSubnoteType = (String) cpcNwMap.get("subnoteType");
-                        if(textIndex > 1) cpcNwMap.put("subnoteType", "");
-                        // <subnote> Element를 만나면 CpcNoteAndWarning를 생성완료하고 리스트에 넣는다.(subnote가 가진 하위 note-paragraph 목록을 생성해야하기 때문)
-                        CpcNoteAndWarning cpcNw = setCpcNw(sb, cpcNwMap);
-                        if(cpcNwList.size() == 5000) {
-                            cpcNwLists.add(cpcNwList);
-                            cpcNwList = new ArrayList<>();
-                        } else if (cpcNwList.size() <= 5000) {
-                            cpcNwList.add(cpcNw);
-                        }
-
-                        String subnoteType = ((SubnoteType) cont.getValue()).getType();
                         int seq = (int) cpcNwMap.get("seq");
                         int depth = (int) cpcNwMap.get("depth");
-
+                        if(textIndex > 1) cpcNwMap.put("subnoteType", "");
+                        // <subnote> Element를 만나면 CpcNoteAndWarning를 생성완료하고 리스트에 넣는다.(subnote가 가진 하위 note-paragraph 목록을 생성해야하기 때문)
+                        if(!"".equals(sb.toString())) {
+                            CpcNoteAndWarning cpcNw = setCpcNw(sb, cpcNwMap);
+                            cpcNwList.add(cpcNw);
+                            if(cpcNwList.size() == 5000) {
+                                cpcNwLists.add(cpcNwList);
+                                cpcNwList = new ArrayList<>();
+                            }
+                            sb.setLength(0);
+                            cpcNwMap.put("seq", ++seq);
+                        }
+                        String subnoteType = ((SubnoteType) cont.getValue()).getType();
                         cpcNwMap.put("subnoteType", subnoteType);
-                        cpcNwMap.put("seq", ++seq);
                         cpcNwMap.put("depth", ++depth); // <subnote> 요소를 만나면 무조건 depth(계층)이 1 늘린다.
 
                         List<NoteParagraphType> noteParagraphList = ((SubnoteType) cont.getValue()).getNoteParagraph();
@@ -411,12 +425,13 @@ public class CpcService {
                         sb.setLength(0);
 
                     }
-                    int beforeSize = (int) cpcNwMap.get("beforeSize");
-                    int beforeIndex = (int) cpcNwMap.get("beforeIndex");
-
-                    if(contentsSize == i && beforeSize != beforeIndex) {
-                        continue;
-                    }
+//                    int beforeSize = (int) cpcNwMap.get("beforeSize");
+//                    int beforeIndex = (int) cpcNwMap.get("beforeIndex");
+                    // continue를 하는 목적? => 현재 for문의 길이만큼 반복해서 sb를 만들고, beforeSize를 모두 이어붙일떄까지 반복하기 위해서.
+                    // 하지만 "A61P"의 경우에는 notepara 1개당 하나의 sb가 반입되어야함
+//                    if(contentsSize == i && beforeSize != beforeIndex) {
+//                        continue;
+//                    }
 
                 } else { // note-paragraph가 텍스트 정보일 때(Serializable), StringBuilder에 append한다.
                     String replacedContent = content.toString().replace("\n", "").replace("\t", "&nbsp;");
@@ -429,20 +444,22 @@ public class CpcService {
                 if(beforeType.equals("u") && beforeSize != beforeIndex) {
                     continue;
                 }
+                if(beforeType.equals("cpcSpecNote") && contentsSize == i && beforeSize != beforeIndex) {
+                    continue;
+                }
+
                 Boolean isEntry = (Boolean) cpcNwMap.get("isEntry");
                 if(!beforeType.equals("u") && !isEntry && contentsSize == i) {
                     if(!"".equals(sb.toString())) {
+                        int seq = (int) cpcNwMap.get("seq");
                         CpcNoteAndWarning nw = setCpcNw(sb, cpcNwMap);
+                        cpcNwList.add(nw);
                         if(cpcNwList.size() == 5000) {
                             cpcNwLists.add(cpcNwList);
                             cpcNwList = new ArrayList<>();
-                        } else if (cpcNwList.size() <= 5000) {
-                            cpcNwList.add(nw);
                         }
-
-                        int seq = (int) cpcNwMap.get("seq");
-                        seq++;
-                        cpcNwMap.put("seq", seq);
+                        cpcNwMap.put("seq", ++seq);
+                        sb.setLength(0);
                     }
                 }
             }
@@ -680,6 +697,7 @@ public class CpcService {
         Boolean isDefExists = item.isDefinitionExists();
         String definitionExists = (isDefExists != null) ? (item.isDefinitionExists() ? "Y" : "N") : null;
         String dateRevised = convertToString(item.getDateRevised());
+        int level = item.getLevel();
 
         // CPC_TREE 객체 세팅
         CpcTree cpcTree = new CpcTree();
@@ -687,7 +705,10 @@ public class CpcService {
         cpcTree.setSymbol(symbol);
         cpcTree.setBreakdownCode(breakdownCode);
         cpcTree.setNotAllocatable(notAllocatable);
-        cpcTree.setLevel(item.getLevel());
+        cpcTree.setLevel(level);
+        if(parentSymbol != null) {
+            cpcTree.setParentLevel(item.getLevel() - 1);
+        }
         cpcTree.setAdditionalOnly(additionalOnly);
         cpcTree.setSortKey(item.getSortKey());
         cpcTree.setDefinitionExists(definitionExists);
