@@ -83,6 +83,34 @@
         )
     </insert>
 
+    <insert id="insertCpcNwEach" parameterType="CpcNoteAndWarning">
+        INSERT INTO CPC_NOTEANDWARNING
+        ( SYMBOL
+        , LVL
+        , "TYPE"
+        , SEQ
+        , "DEPTH"
+        , SUBNOTE_TYPE
+        , CONTENT
+        , DATE_REVISED
+        )
+        VALUES
+            (
+                #{symbol}
+            , #{level}
+            , #{type}
+            , #{seq}
+            , #{depth}
+            , #{subnoteType}
+            , #{content,jdbcType=CLOB}
+            , #{dateRevised}
+            )
+    </insert>
+
+
+
+
+<!--            ORACLE JDBC는 MYBATIS MERGE문 사용 시, 특정문자열 파라미터의 길이가 4000BYTE를 넘을때 사용할 수 없으므로 현재쿼리는 폐기.  -->
     <insert id="insertCpcNoteAndWarnings" parameterType="list">
         INSERT INTO CPC_NOTEANDWARNING
         ( SYMBOL
@@ -106,4 +134,6 @@
             FROM DUAL
         </foreach>
     </insert>
+<!--            ORACLE JDBC는 MYBATIS MERGE문 사용 시, 특정문자열 파라미터의 길이가 4000BYTE를 넘을때 사용할 수 없으므로 현재쿼리는 폐기.  -->
+
 </mapper>

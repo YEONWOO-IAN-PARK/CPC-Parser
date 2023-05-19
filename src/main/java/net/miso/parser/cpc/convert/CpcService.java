@@ -38,13 +38,6 @@ public class CpcService {
     private static final File[] EMPTY_FILES = new File[0];
     private final String dirPath = "D:/data/CPC/CPC/CPCSchemeXML202302";
 
-    // Note and Warning에서 사용되는 기호모음
-//    private final List<String> lowerAlphaList = new ArrayList<>(Arrays.asList("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"));
-//    private final List<String> upperAlphaList = new ArrayList<>(Arrays.asList("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"));
-//    private final List<String> lowerRomanListUntilTwenty = new ArrayList<>(Arrays.asList("i", "ii", "iii", "iv", "v", "vi", "vii", "viii", "ix", "x", "xi", "xii", "xiii", "xiv", "xv", "xvi", "xvii", "xviii", "xix", "xx"));
-//    private final List<String> upperRomanListUntilTwenty = new ArrayList<>(Arrays.asList("I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII", "XIII", "XIV", "XV", "XVI", "XVII", "XVIII", "XIX", "XX"));
-//    private final String bullet = "-";
-
     List<CpcTree> cpcTreeList = new ArrayList<>();
     List<CpcTitle> cpcTitleList = new ArrayList<>();
     List<CpcMedia> cpcMediaList = new ArrayList<>();
@@ -54,7 +47,6 @@ public class CpcService {
     List<List<CpcTitle>> cpcTitleLists = new ArrayList<>();
     List<List<CpcNoteAndWarning>> cpcNwLists = new ArrayList<>();
 
-
     public void convertXmlToJava() throws Exception {
 
         long start = System.currentTimeMillis();
@@ -63,7 +55,7 @@ public class CpcService {
         File[] xmlFilesSortedByNameAsc = sortByFileName(filteredXmlFiles);
 
         for (File file : xmlFilesSortedByNameAsc) {
-//        File file = new File("D:/data/CPC/CPC/CPCSchemeXML202302/cpc-scheme-A61.xml");
+//        File file = new File("D:/data/CPC/CPC/CPCSchemeXML202302/cpc-scheme-F16C.xml");
             if (file.exists()) {
                 JAXBContext context = JAXBContext.newInstance(ClassSchemeType.class);
                 Unmarshaller unmarshaller = context.createUnmarshaller();
@@ -86,7 +78,6 @@ public class CpcService {
         cpcNwList = new ArrayList<>();
 
         long end = System.currentTimeMillis();
-
         LOGGER.info("############### CPC 파싱 종료 - 소요시간(초) : {}", (end - start)/1000);
 
         ///////////////////////// 반입 시작 ///////////////////
@@ -95,42 +86,44 @@ public class CpcService {
         int cpcTitleResultCount = 0;
         int cpcNwResultCount = 0;
 
-
-//        if(!cpcTreeLists.isEmpty()) {
-//            for(List<CpcTree> treeList : cpcTreeLists) {
-//                if(!treeList.isEmpty()) {
-//                    cpcTreeResultCount += cpcMapper.insertCpcTrees(treeList);
-//                }
-//            }
-//            LOGGER.info("######### 1. CPC TREE INSERT RESULT COUNT : {}", cpcTreeResultCount);
-//            cpcTreeLists.clear();
-//            cpcTreeList.clear();
-//        }
-        if(!cpcNwLists.isEmpty()) {
-            for(List<CpcNoteAndWarning> nwList : cpcNwLists) {
-                if(!nwList.isEmpty()) {
-                    cpcNwResultCount += cpcMapper.insertCpcNoteAndWarnings(nwList);
+        if(!cpcTreeLists.isEmpty()) {
+            for(List<CpcTree> treeList : cpcTreeLists) {
+                if(!treeList.isEmpty()) {
+                    cpcTreeResultCount += cpcMapper.insertCpcTrees(treeList);
                 }
             }
-            LOGGER.info("######### 3. CPC NOTE AND WARNING INSERT RESULT COUNT : {}", cpcNwResultCount);
-            cpcNwLists.clear();
-            cpcNwList.clear();
+            LOGGER.info("######### 1. CPC TREE INSERT RESULT COUNT : {}", cpcTreeResultCount);
+            cpcTreeLists.clear();
+            cpcTreeList.clear();
         }
         if(!cpcMediaList.isEmpty()) {
             int cpcMediaResultCount = cpcMapper.insertCpcMedias(cpcMediaList);
             LOGGER.info("######### 2. CPC MEDIA INSERT RESULT COUNT : {}", cpcMediaResultCount);
             cpcMediaList.clear();
         }
-//        if(!cpcTitleLists.isEmpty()) {
-//            for (List<CpcTitle> titleList : cpcTitleLists) {
-//                if(!titleList.isEmpty()){
-//                    cpcTitleResultCount += cpcMapper.insertCpcTitles(titleList);
-//                }
-//            }
-//            LOGGER.info("######### 4. CPC TITLE INSERT RESULT COUNT : {}", cpcTitleResultCount);
-//            cpcTitleLists.clear();
-//            cpcTitleList.clear();
-//        }
+        if(!cpcTitleLists.isEmpty()) {
+            for (List<CpcTitle> titleList : cpcTitleLists) {
+                if(!titleList.isEmpty()){
+                    cpcTitleResultCount += cpcMapper.insertCpcTitles(titleList);
+                }
+            }
+            LOGGER.info("######### 3. CPC TITLE INSERT RESULT COUNT : {}", cpcTitleResultCount);
+            cpcTitleLists.clear();
+            cpcTitleList.clear();
+        }
+        if(!cpcNwLists.isEmpty()) {
+            for(List<CpcNoteAndWarning> nwList : cpcNwLists) {
+                if(!nwList.isEmpty()) {
+                    for (CpcNoteAndWarning nw : nwList) {
+                        cpcNwResultCount += cpcMapper.insertCpcNwEach(nw);
+                    }
+//                    cpcNwResultCount += cpcMapper.insertCpcNoteAndWarnings(nwList);   // OJDBC + MYBATIS MERGE(INSERT) + CLOB 조건에서 사용못함
+                }
+            }
+            LOGGER.info("######### 4. CPC NOTE AND WARNING INSERT RESULT COUNT : {}", cpcNwResultCount);
+            cpcNwLists.clear();
+            cpcNwList.clear();
+        }
 
         long insertEnd = System.currentTimeMillis();
         LOGGER.info("############### CPC 반입 종료 - 소요시간(초) : {}", (insertEnd - insertStart)/1000);
@@ -263,8 +256,7 @@ public class CpcService {
 
         if (contents != null && !contents.isEmpty()) {
             for (Serializable content : contents) {
-
-                String trimContent = content.toString().trim();
+//                String trimContent = content.toString().trim();
 //                if(!"".equals(trimContent)) i++;
                 i++;
 
@@ -293,8 +285,9 @@ public class CpcService {
                         cpcNwMap.put("beforeIndex", beforeIndex);
                         cpcNwMap.put("beforeType", "");
                     } else if (cont.getValue() instanceof ClassRefType) {
-                        sb.append(((ClassRefType) cont.getValue()).getValue());
-
+                        sb.append("<class-ref>")
+                                .append(((ClassRefType) cont.getValue()).getValue())
+                                .append("</class-ref>");
                     } else if ("pre".equals(typeName)) {
                         List<Serializable> preContents = ((NoteParagraphType) cont.getValue()).getContent();
                         // 앞뒤로 <pre>내용</pre>와 같이 태그를 감싸주는 조건문에서는 cpcNwMap.put("contentsSize", n)를 해주지 않는다.
@@ -303,25 +296,27 @@ public class CpcService {
                         doRecursiveNw2(sb, preContents, cpcNwMap);
                         sb.append("</pre>");
 
-                        CpcNoteAndWarning nw = setCpcNw(sb, cpcNwMap);
-                        cpcNwList.add(nw);
-                        if(cpcNwList.size() == 5000) {
-                            cpcNwLists.add(cpcNwList);
-                            cpcNwList = new ArrayList<>();
-                        }
+                        if(!"".equals(sb.toString().trim())) {
+                            CpcNoteAndWarning nw = setCpcNw(sb, cpcNwMap);
+                            cpcNwList.add(nw);
+                            if (cpcNwList.size() == 1000) {
+                                cpcNwLists.add(cpcNwList);
+                                cpcNwList = new ArrayList<>();
+                            }
 
-                        sb.setLength(0);
-                        int seq = (int) cpcNwMap.get("seq");
-                        cpcNwMap.put("seq", ++seq);
+                            sb.setLength(0);
+                            int seq = (int) cpcNwMap.get("seq");
+                            cpcNwMap.put("seq", ++seq);
+                        }
                     } else if (cont.getValue() instanceof TableType) {
                         String subnoteType = (String) cpcNwMap.get("subnoteType");
 //                        cpcNwMap.put("subnoteType", "");
                         int seq = (int) cpcNwMap.get("seq");
                         // <table> Element를 만나면 CpcNoteAndWarning를 생성완료하고 리스트에 넣는다.(table이 가진 하위 entry 목록을 생성해야하기 때문)
-                        if(!"".equals(sb.toString())) {
+                        if(!"".equals(sb.toString().trim())) {
                             CpcNoteAndWarning nw = setCpcNw(sb, cpcNwMap);
                             cpcNwList.add(nw);
-                            if (cpcNwList.size() == 5000) {
+                            if (cpcNwList.size() == 1000) {
                                 cpcNwLists.add(cpcNwList);
                                 cpcNwList = new ArrayList<>();
                             }
@@ -349,10 +344,10 @@ public class CpcService {
 
                                 if(entryList.size() != entryIdx) sb.append("|");
                             }
-                            if(!"".equals(sb.toString())) {
+                            if(!"".equals(sb.toString().trim())) {
                                 CpcNoteAndWarning tableNw = setCpcNw(sb, cpcNwMap);
                                 cpcNwList.add(tableNw);
-                                if (cpcNwList.size() == 5000) {
+                                if (cpcNwList.size() == 1000) {
                                     cpcNwLists.add(cpcNwList);
                                     cpcNwList = new ArrayList<>();
                                 }
@@ -377,7 +372,7 @@ public class CpcService {
                         cpcNwMap.put("beforeType", "");
                     } else if (cont.getValue() instanceof MediaType) {
                         MediaType mediaType = (MediaType) cont.getValue();
-                        sb.append("<img id=\"").append(mediaType.getId()).append("\" alt=\"image\" />");
+                        sb.append("<img id=\"").append(mediaType.getId()).append("\" alt=\"image\" src=\"/images/cpc/").append(mediaType.getFileName()).append("\"/>");
 
                         CpcMedia cpcMedia = new CpcMedia();
                         cpcMedia.setSymbol((String) cpcNwMap.get("symbol"));
@@ -400,10 +395,10 @@ public class CpcService {
                         int depth = (int) cpcNwMap.get("depth");
                         if(textIndex > 1) cpcNwMap.put("subnoteType", "");
                         // <subnote> Element를 만나면 CpcNoteAndWarning를 생성완료하고 리스트에 넣는다.(subnote가 가진 하위 note-paragraph 목록을 생성해야하기 때문)
-                        if(!"".equals(sb.toString())) {
+                        if(!"".equals(sb.toString().trim())) {
                             CpcNoteAndWarning cpcNw = setCpcNw(sb, cpcNwMap);
                             cpcNwList.add(cpcNw);
-                            if(cpcNwList.size() == 5000) {
+                            if(cpcNwList.size() == 1000) {
                                 cpcNwLists.add(cpcNwList);
                                 cpcNwList = new ArrayList<>();
                             }
@@ -450,11 +445,11 @@ public class CpcService {
 
                 Boolean isEntry = (Boolean) cpcNwMap.get("isEntry");
                 if(!beforeType.equals("u") && !isEntry && contentsSize == i) {
-                    if(!"".equals(sb.toString())) {
+                    if(!"".equals(sb.toString().trim())) {
                         int seq = (int) cpcNwMap.get("seq");
                         CpcNoteAndWarning nw = setCpcNw(sb, cpcNwMap);
                         cpcNwList.add(nw);
-                        if(cpcNwList.size() == 5000) {
+                        if(cpcNwList.size() == 1000) {
                             cpcNwLists.add(cpcNwList);
                             cpcNwList = new ArrayList<>();
                         }
@@ -513,6 +508,8 @@ public class CpcService {
         String connectedTitle = getConnectedTitle(item);
         CpcTitle cpcTitle = new CpcTitle();
         if (connectedTitle != null) {
+            connectedTitle = connectedTitle.replace("\t", "").replace("\n", "").replace(" ", " ");
+
             Optional<XMLGregorianCalendar> dateRevisedOpt = item.getClassTitle().getDateRevised();
             XMLGregorianCalendar dateRevised = dateRevisedOpt.orElse(null);
             String titleDate = convertToString(dateRevised);
@@ -584,11 +581,11 @@ public class CpcService {
         String endSymbol = "";
 
         if (typeName.equals("CPC-specific-text")) {
-            startSymbol = "{";
-            endSymbol = "}";
+            startSymbol = "<cpc-spec-text>{";
+            endSymbol = "}</cpc-spec-text>";
         } else if (typeName.equals("reference")) {
-            startSymbol = "(";
-            endSymbol = ")";
+            startSymbol = "<reference>(";
+            endSymbol = ")</<reference>";
         }
 
         sb.append(startSymbol);
@@ -611,13 +608,13 @@ public class CpcService {
             if (cont instanceof JAXBElement) {
                 String typeName = ((JAXBElement<?>) cont).getName().toString();
                 if (("CPC-specific-text").equals(typeName)) {
-                    sb.append("{");
+                    sb.append("<cpc-spec-text>{");
                     doTitleRecurvsive3((JAXBElement<?>) cont, sb, symAndLvlMap);
-                    sb.append("}");
+                    sb.append("}</cpc-spec-text>");
                 } else if (typeName.equals("reference")) {
-                    sb.append("(");
+                    sb.append("<reference>(");
                     doTitleRecurvsive3((JAXBElement<?>) cont, sb, symAndLvlMap);
-                    sb.append(")");
+                    sb.append(")</reference>");
                 } else {
                     doTitleRecurvsive3((JAXBElement<?>) cont, sb, symAndLvlMap);
                 }
@@ -641,8 +638,9 @@ public class CpcService {
         String exName = cont.getName().toString();
 
         if (cont.getValue() instanceof ClassRefType) {
-            sb.append(((ClassRefType) cont.getValue()).getValue());
-
+            sb.append("<class-ref>")
+                    .append(((ClassRefType) cont.getValue()).getValue())
+                    .append("</class-ref>");
         } else if (cont.getValue() instanceof Markup) {
             List<Serializable> list = ((Markup) cont.getValue()).getContent();
             doTitleRecursive2(list, sb, symAndLvlMap);
@@ -655,7 +653,7 @@ public class CpcService {
 
         } else if (cont.getValue() instanceof MediaType) {    // <media>
             MediaType mediaType = (MediaType) cont.getValue();
-            sb.append("<img id=\"").append(mediaType.getId()).append("\" alt=\"image\" />");
+            sb.append("<img id=\"").append(mediaType.getId()).append("\" alt=\"image\" src=\"/images/cpc/").append(mediaType.getFileName()).append("\"/>");
 
             CpcMedia cpcMedia = new CpcMedia();
             cpcMedia.setSymbol((String) symAndLvlMap.get("symbol"));
@@ -667,8 +665,9 @@ public class CpcService {
             cpcMediaList.add(cpcMedia);
 
         } else if (cont.getValue() instanceof ClassRefType) {
-            sb.append(cont.getValue());
-
+            sb.append("<class-ref>")
+                    .append(cont.getValue())
+                    .append("</class-ref>");
         } else if (exName.equals("sub")) {    // <sub>
             sb.append("<sub>");
             sb.append(cont.getValue());
@@ -730,7 +729,7 @@ public class CpcService {
             String subclass = symbol.substring(0, 4); // 이어붙일 CPC Symbol 1번 -> A01K
             String body = null;                       // 이어붙일 CPC Symbol 2번 -> 0001
             String afterSlash = null;                 // 이어붙일 CPC Symbol 3번 -> /2238
-            int targetIndex = symbol.indexOf("/");  // A01K089/7789 -> 7번째
+            int targetIndex = symbol.indexOf("/");    // A01K089/7789 -> 7번째
 
             if (targetIndex != -1) {
                 afterSlash = symbol.substring(targetIndex);
@@ -768,7 +767,7 @@ public class CpcService {
     }
 
     /**
-     * CPC xml파일들이 존재하는 디렉토리에서 "cpc-scheme-*.xml"에 해당하는 파일들을 배열로 만듬
+     * CPC xml파일들이 존재하는 디렉토리에서 "cpc-scheme-*.xml"에 해당하는 파일들을 배열로 만든다.
      *
      * @return
      */

@@ -18,4 +18,5 @@ public interface CpcMapper {
     int insertCpcMedias(List<CpcMedia> cpcMediaList);
     int insertCpcNoteAndWarnings(List<CpcNoteAndWarning> cpcNoteAndWarningList);
 
+    int insertCpcNwEach(CpcNoteAndWarning nw);
 }
